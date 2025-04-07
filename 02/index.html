@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate SSML</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body class="font-sans bg-gray-100 min-h-screen p-4 md:p-6">
+    <h2 class="text-green-600 text-2xl md:text-3xl font-bold mt-6 text-center">Generate SSML file</h2>
+
+    <div class="flex flex-col md:flex-row justify-center gap-6 mb-6">
+        <div>
+            <h3 class="text-lg md:text-xl font-semibold mb-2">Voice A</h3>
+            <select id="voiceA" class="w-52 p-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-green-500">
+                <option value="en-US-AndrewMultilingualNeural">Andrew (EN)</option>
+                <option value="en-US-ChristopherNeural">Christopher (EN)</option>
+                <option value="en-US-EricNeural">EricNeural (EN)</option>
+                <option value="vi-VN-HoaiMyNeural">Hoai My (VN)</option>
+                <option value="vi-VN-NamMinhNeural">Nam Minh (VN)</option>
+            </select>
+        </div>
+        <div>
+            <h3 class="text-lg md:text-xl font-semibold mb-2">Voice B</h3>
+            <select id="voiceB" class="w-52 p-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-green-500">
+                <option value="en-US-AndrewMultilingualNeural">Andrew (EN)</option>
+                <option value="en-US-ChristopherNeural">Christopher (EN)</option>
+                <option value="en-US-EricNeural">EricNeural (EN)</option>
+                <option value="vi-VN-HoaiMyNeural">Hoai My (VN)</option>
+                <option value="vi-VN-NamMinhNeural">Nam Minh (VN)</option>
+            </select>
+        </div>
+    </div>
+
+    <h2 class="text-green-600 text-2xl md:text-3xl font-bold mt-6 text-center">Conversation</h2>
+    <textarea id="conversation" rows="10"
+        class="w-full md:w-1/2 mx-auto p-3 rounded-md border border-gray-300 font-mono text-base block resize-y focus:ring-2 focus:ring-green-500">
+A: Chào Lan! Mình là James, đến từ Hoa Kỳ. Rất vui được gặp bạn.
+B: Chào James! Mình là Lan, đến từ Việt Nam. Rất vui được làm quen với bạn.
+A: Bạn làm nghề gì vậy, Lan?
+B: Mình là cô giáo dạy ngoại ngữ. Còn bạn?
+A: Mình là kỹ sư hàng không.
+B: Nghe thú vị quá! Bạn đến Việt Nam lâu chưa?
+A: Mình mới đến đây được vài ngày.
+B: Hy vọng bạn sẽ thích Việt Nam!
+A: Cảm ơn Lan!
+    </textarea>
+
+    <button onclick="generateSSML()"
+        class="bg-green-600 text-white px-6 py-2 rounded-md mt-6 mx-auto block hover:bg-green-700 transition-colors">Xuất
+        SSML</button>
+
+    <h2 class="text-green-600 text-2xl md:text-3xl font-bold mt-6 text-center">SSML Output</h2>
+    <div class="relative w-full md:w-1/2 mx-auto">
+        <pre id="ssmlOutput" tabindex="0"
+            class="bg-white p-4 rounded-md border border-gray-300 font-mono whitespace-pre-wrap break-words h-52 overflow-y-auto"></pre>
+        <button id="copyBtn"
+            class="absolute top-2 right-2 bg-green-600 text-white px-3 py-1 rounded-md hover:bg-green-700 transition-colors">Copy</button>
+    </div>
+
+    <script src="./script.js"></script>
+</body>
+
+</html>
