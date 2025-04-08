@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dialog Processing App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+    <div class="container mx-auto p-8 max-w-5xl">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-8 text-center">Dialog Processing App</h1>
+
+        <!-- Welcome Message -->
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <p id="welcome-msg" class="text-lg text-gray-700 text-center">Loading...</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="mb-8 text-center">
+            <button id="run-all-btn" onclick="runAllSteps()" class="bg-green-600 text-white px-8 py-4 rounded-lg hover:bg-green-700 transition-all duration-200 shadow-md text-xl font-semibold">Run All Steps</button>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="border-b border-gray-200">
+                <nav class="flex" aria-label="Tabs">
+                    <button id="tab-step1" onclick="showTab('step1')" class="tab-btn flex-1 py-4 px-6 text-blue-600 border-b-4 border-blue-600 font-semibold text-lg flex items-center justify-center">
+                        <span class="mr-2">1.</span> Generate Dialog
+                        <span id="step1-status" class="ml-2 hidden">✅</span>
+                    </button>
+                    <button id="tab-step2" onclick="showTab('step2')" class="tab-btn flex-1 py-4 px-6 text-gray-400 font-semibold text-lg flex items-center justify-center cursor-not-allowed" disabled>
+                        <span class="mr-2">2.</span> Extract Words
+                        <span id="step2-status" class="ml-2 hidden">✅</span>
+                    </button>
+                    <button id="tab-step3" onclick="showTab('step3')" class="tab-btn flex-1 py-4 px-6 text-gray-400 font-semibold text-lg flex items-center justify-center cursor-not-allowed" disabled>
+                        <span class="mr-2">3.</span> Translate Words
+                        <span id="step3-status" class="ml-2 hidden">✅</span>
+                    </button>
+                    <button id="tab-step4" onclick="showTab('step4')" class="tab-btn flex-1 py-4 px-6 text-gray-400 font-semibold text-lg flex items-center justify-center cursor-not-allowed" disabled>
+                        <span class="mr-2">4.</span> Save to Database
+                        <span id="step4-status" class="ml-2 hidden">✅</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="p-8">
+                <!-- Step 1: Generate Dialog -->
+                <div id="step1" class="tab-content">
+                    <button id="generate-btn" onclick="generateDialog()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md font-semibold">Run Step</button>
+                    <div id="dialog-output" class="mt-6 text-gray-800 text-lg leading-relaxed"></div>
+                </div>
+
+                <!-- Step 2: Extract Words -->
+                <div id="step2" class="tab-content hidden">
+                    <button id="extract-btn" onclick="extractWords()" class="bg-blue-300 text-white px-6 py-3 rounded-lg transition-all duration-200 font-semibold opacity-60 cursor-not-allowed" disabled title="Please generate a dialog first">Run Step</button>
+                    <ul id="words-output" class="mt-6 text-gray-800 text-lg list-disc list-inside"></ul>
+                </div>
+
+                <!-- Step 3: Translate Words -->
+                <div id="step3" class="tab-content hidden">
+                    <button id="translate-btn" onclick="translateWords()" class="bg-blue-300 text-white px-6 py-3 rounded-lg transition-all duration-200 font-semibold opacity-60 cursor-not-allowed" disabled title="Please extract words first">Run Step</button>
+                    <div class="mt-6 overflow-x-auto">
+                        <table class="w-full text-left text-gray-800 border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="p-3 font-semibold">Vietnamese</th>
+                                    <th class="p-3 font-semibold">English</th>
+                                </tr>
+                            </thead>
+                            <tbody id="translated-table-body" class="text-lg"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Step 4: Save to Database -->
+                <div id="step4" class="tab-content hidden">
+                    <button id="save-btn" onclick="saveWords()" class="bg-blue-300 text-white px-6 py-3 rounded-lg transition-all duration-200 font-semibold opacity-60 cursor-not-allowed" disabled title="Please translate words first">Run Step</button>
+                    <div class="mt-6 overflow-x-auto">
+                        <table class="w-full text-left text-gray-800 border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="p-3 font-semibold">Vietnamese</th>
+                                    <th class="p-3 font-semibold">English</th>
+                                    <th class="p-3 font-semibold">Word ID</th>
+                                </tr>
+                            </thead>
+                            <tbody id="saved-table-body" class="text-lg"></tbody>
+                        </table>
+                        <p id="dialog-id" class="mt-4 text-gray-800 text-lg"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080';
+        let currentDialog = '';
+        let dialogID = null;
+        let extractedWords = [];
+        let translatedWords = [];
+
+        // Fetch with error handling
+        async function fetchWithErrorHandling(url, options = {}) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorText}`);
+                }
+                return await response.json();
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        // Fetch welcome message
+        async function fetchWelcome() {
+            try {
+                const data = await fetchWithErrorHandling(`${API_BASE_URL}/`);
+                document.getElementById('welcome-msg').textContent = data.data || 'Error fetching welcome message';
+            } catch (error) {
+                document.getElementById('welcome-msg').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        // Reset state to initial
+        function resetState() {
+            currentDialog = '';
+            dialogID = null;
+            extractedWords = [];
+            translatedWords = [];
+
+            document.getElementById('dialog-output').innerHTML = '';
+            document.getElementById('words-output').innerHTML = '';
+            document.getElementById('translated-table-body').innerHTML = '';
+            document.getElementById('saved-table-body').innerHTML = '';
+            document.getElementById('dialog-id').textContent = '';
+
+            document.getElementById('extract-btn').disabled = true;
+            document.getElementById('extract-btn').classList.add('bg-blue-300', 'opacity-60', 'cursor-not-allowed');
+            document.getElementById('extract-btn').classList.remove('bg-blue-600', 'hover:bg-blue-700', 'shadow-md');
+            document.getElementById('translate-btn').disabled = true;
+            document.getElementById('translate-btn').classList.add('bg-blue-300', 'opacity-60', 'cursor-not-allowed');
+            document.getElementById('translate-btn').classList.remove('bg-blue-600', 'hover:bg-blue-700', 'shadow-md');
+            document.getElementById('save-btn').disabled = true;
+            document.getElementById('save-btn').classList.add('bg-blue-300', 'opacity-60', 'cursor-not-allowed');
+            document.getElementById('save-btn').classList.remove('bg-blue-600', 'hover:bg-blue-700', 'shadow-md');
+
+            document.getElementById('tab-step2').disabled = true;
+            document.getElementById('tab-step2').classList.add('text-gray-400', 'cursor-not-allowed');
+            document.getElementById('tab-step2').classList.remove('hover:text-blue-600');
+            document.getElementById('tab-step3').disabled = true;
+            document.getElementById('tab-step3').classList.add('text-gray-400', 'cursor-not-allowed');
+            document.getElementById('tab-step3').classList.remove('hover:text-blue-600');
+            document.getElementById('tab-step4').disabled = true;
+            document.getElementById('tab-step4').classList.add('text-gray-400', 'cursor-not-allowed');
+            document.getElementById('tab-step4').classList.remove('hover:text-blue-600');
+
+            document.getElementById('step1-status').classList.add('hidden');
+            document.getElementById('step2-status').classList.add('hidden');
+            document.getElementById('step3-status').classList.add('hidden');
+            document.getElementById('step4-status').classList.add('hidden');
+
+            showTab('step1');
+        }
+
+        // Generate dialog
+        async function generateDialog() {
+            resetState();
+            document.getElementById('dialog-output').innerHTML = '<span class="text-gray-500">Processing...</span>';
+            try {
+                const data = await fetchWithErrorHandling(`${API_BASE_URL}/dialog`);
+                if (data.status === 'success') {
+                    currentDialog = data.data.dialog;
+                    dialogID = data.data.dialogID;
+                    document.getElementById('dialog-output').innerHTML = currentDialog.replace(/\n/g, '<br>');
+                    document.getElementById('extract-btn').disabled = false;
+                    document.getElementById('extract-btn').classList.remove('bg-blue-300', 'opacity-60', 'cursor-not-allowed');
+                    document.getElementById('extract-btn').classList.add('bg-blue-600', 'hover:bg-blue-700', 'shadow-md');
+                    document.getElementById('tab-step2').disabled = false;
+                    document.getElementById('tab-step2').classList.remove('text-gray-400', 'cursor-not-allowed');
+                    document.getElementById('tab-step2').classList.add('hover:text-blue-600');
+                    document.getElementById('step1-status').classList.remove('hidden');
+                    return true;
+                } else {
+                    document.getElementById('dialog-output').textContent = `Error: ${data.error}`;
+                    return false;
+                }
+            } catch (error) {
+                document.getElementById('dialog-output').textContent = `Error: ${error.message}`;
+                return false;
+            }
+        }
+
+        // Extract words
+        async function extractWords() {
+            if (!currentDialog) {
+                document.getElementById('words-output').innerHTML = '<li class="text-red-600">Please generate a dialog first!</li>';
+                return false;
+            }
+            document.getElementById('words-output').innerHTML = '<li class="text-gray-500">Processing...</li>';
+            try {
+                const data = await fetchWithErrorHandling(`${API_BASE_URL}/words?dialog=${encodeURIComponent(currentDialog)}`);
+                if (data.status === 'success') {
+                    extractedWords = data.data.extractedWords;
+                    const list = document.getElementById('words-output');
+                    list.innerHTML = '';
+                    extractedWords.forEach(word => {
+                        const li = document.createElement('li');
+                        li.textContent = word;
+                        list.appendChild(li);
+                    });
+                    document.getElementById('translate-btn').disabled = false;
+                    document.getElementById('translate-btn').classList.remove('bg-blue-300', 'opacity-60', 'cursor-not-allowed');
+                    document.getElementById('translate-btn').classList.add('bg-blue-600', 'hover:bg-blue-700', 'shadow-md');
+                    document.getElementById('tab-step3').disabled = false;
+                    document.getElementById('tab-step3').classList.remove('text-gray-400', 'cursor-not-allowed');
+                    document.getElementById('tab-step3').classList.add('hover:text-blue-600');
+                    document.getElementById('step2-status').classList.remove('hidden');
+                    return true;
+                } else {
+                    document.getElementById('words-output').innerHTML = `<li class="text-red-600">Error: ${data.error}</li>`;
+                    return false;
+                }
+            } catch (error) {
+                document.getElementById('words-output').innerHTML = `<li class="text-red-600">Error: ${error.message}</li>`;
+                return false;
+            }
+        }
+
+        // Translate words
+        async function translateWords() {
+            if (extractedWords.length === 0) {
+                document.getElementById('translated-table-body').innerHTML = '<tr><td colspan="2" class="p-3 text-red-600">Please extract words first!</td></tr>';
+                return false;
+            }
+            document.getElementById('translated-table-body').innerHTML = '<tr><td colspan="2" class="p-3 text-gray-500">Processing...</td></tr>';
+            try {
+                const data = await fetchWithErrorHandling(`${API_BASE_URL}/translate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ words: extractedWords })
+                });
+                if (data.status === 'success') {
+                    translatedWords = data.data.translatedWords;
+                    const tbody = document.getElementById('translated-table-body');
+                    tbody.innerHTML = '';
+                    translatedWords.forEach(word => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td class="p-3 border-b">${word.vi}</td><td class="p-3 border-b">${word.en}</td>`;
+                        tbody.appendChild(tr);
+                    });
+                    document.getElementById('save-btn').disabled = false;
+                    document.getElementById('save-btn').classList.remove('bg-blue-300', 'opacity-60', 'cursor-not-allowed');
+                    document.getElementById('save-btn').classList.add('bg-blue-600', 'hover:bg-blue-700', 'shadow-md');
+                    document.getElementById('tab-step4').disabled = false;
+                    document.getElementById('tab-step4').classList.remove('text-gray-400', 'cursor-not-allowed');
+                    document.getElementById('tab-step4').classList.add('hover:text-blue-600');
+                    document.getElementById('step3-status').classList.remove('hidden');
+                    return true;
+                } else {
+                    document.getElementById('translated-table-body').innerHTML = `<tr><td colspan="2" class="p-3 text-red-600">Error: ${data.error}</td></tr>`;
+                    return false;
+                }
+            } catch (error) {
+                document.getElementById('translated-table-body').innerHTML = `<tr><td colspan="2" class="p-3 text-red-600">Error: ${error.message}</td></tr>`;
+                return false;
+            }
+        }
+
+        // Save words
+        async function saveWords() {
+            if (translatedWords.length === 0 || !dialogID) {
+                document.getElementById('saved-table-body').innerHTML = '<tr><td colspan="3" class="p-3 text-red-600">Please translate words and generate a dialog first!</td></tr>';
+                return false;
+            }
+            document.getElementById('saved-table-body').innerHTML = '<tr><td colspan="3" class="p-3 text-gray-500">Processing...</td></tr>';
+            try {
+                const data = await fetchWithErrorHandling(`${API_BASE_URL}/save-words`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dialogID, translatedWords })
+                });
+                if (data.status === 'success') {
+                    const tbody = document.getElementById('saved-table-body');
+                    tbody.innerHTML = '';
+                    data.data.savedWords.forEach(word => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td class="p-3 border-b">${word.vi}</td><td class="p-3 border-b">${word.en}</td><td class="p-3 border-b">${word.wordID}</td>`;
+                        tbody.appendChild(tr);
+                    });
+                    document.getElementById('dialog-id').textContent = `Dialog ID: ${data.data.dialogID}`;
+                    document.getElementById('step4-status').classList.remove('hidden');
+                    return true;
+                } else {
+                    document.getElementById('saved-table-body').innerHTML = `<tr><td colspan="3" class="p-3 text-red-600">Error: ${data.error}</td></tr>`;
+                    return false;
+                }
+            } catch (error) {
+                document.getElementById('saved-table-body').innerHTML = `<tr><td colspan="3" class="p-3 text-red-600">Error: ${error.message}</td></tr>`;
+                return false;
+            }
+        }
+
+        // Run all steps automatically
+        async function runAllSteps() {
+            resetState();
+            document.getElementById('dialog-output').innerHTML = '<span class="text-gray-500">Processing...</span>';
+            if (await generateDialog()) {
+                showTab('step2');
+                if (await extractWords()) {
+                    showTab('step3');
+                    if (await translateWords()) {
+                        showTab('step4');
+                        await saveWords();
+                    }
+                }
+            }
+        }
+
+        // Tab switching function
+        function showTab(tabId) {
+            const tabContents = document.querySelectorAll('.tab-content');
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabContents.forEach(content => content.classList.add('hidden'));
+            tabButtons.forEach(btn => {
+                btn.classList.remove('text-blue-600', 'border-b-4', 'border-blue-600');
+                btn.classList.add('text-gray-400');
+                if (!btn.disabled) btn.classList.add('hover:text-blue-600');
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.classList.add('text-blue-600', 'border-b-4', 'border-blue-600');
+            activeBtn.classList.remove('text-gray-400');
+        }
+
+        // Load welcome message on page load and default to Step 1
+        window.onload = () => {
+            fetchWelcome();
+            showTab('step1');
+        };
+    </script>
+</body>
+</html>
