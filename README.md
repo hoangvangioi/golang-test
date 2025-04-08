@@ -94,7 +94,7 @@ This task builds a lightweight HTML/JavaScript application to generate a Speech 
 
 ---
 
-## Task 3: Automated Dialogue Processing with Iris and PostgreSQL (`03`)
+## Task 3: Automated Dialogue Processing with Iris and PostgreSQL - MVC(`03`)
 
 [Link Demo](https://dialogue.hoangvangioi.com)
 
@@ -157,7 +157,7 @@ This task develops a Golang web application using the Iris framework to automate
 ![Demo task 3](./demo/demo_03.gif)
 
 
-## Task 3 (v2): Automated Dialogue Processing with Iris and PostgreSQL (`03_v2`)
+## Task 3 (v2): Automated Dialogue Processing with Iris and PostgreSQL - REST API(`03_v2`)
 
 [Link Demo](https://dialogue-v2.hoangvangioi.com)
 
