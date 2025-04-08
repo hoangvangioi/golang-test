@@ -202,6 +202,7 @@ This task develops a Golang web application using the Iris framework to automate
    Serve `index.html` (from the project directory or a separate folder):
    - **Node.js** (requires `serve`):
      ```bash
+     cd client
      npm install
      npm start
      ```
